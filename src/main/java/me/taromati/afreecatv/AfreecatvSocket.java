@@ -14,9 +14,8 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class AfreecatvSocket extends WebSocketClient {
 
@@ -80,6 +79,9 @@ public class AfreecatvSocket extends WebSocketClient {
     @Override
     public void onMessage(String message) { }
 
+
+    private final ConcurrentHashMap<String, Timer> donationTimers = new ConcurrentHashMap<>();
+
     @Override
     public void onMessage(ByteBuffer bytes) {
         String message = new String(bytes.array(), StandardCharsets.UTF_8);
@@ -106,21 +108,54 @@ public class AfreecatvSocket extends WebSocketClient {
             String nickname = null;
             int payAmount = 0;
             int balloonAmount = 0;
+
             if (cmd.equals(KEY_DONE)) {
                 packetMap.put(dataList.get(2), callback);
+
+                // KEY_CHAT 패킷이 도착하지 않는 경우를 대비한 타이머 설정
+                String nick = dataList.get(2);
+                Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        if (packetMap.containsKey(nick)) {
+                            AfreecatvCallback doneCallback = packetMap.get(nick);
+                            packetMap.remove(nick);
+                            String msg = null;  // 메시지가 없는 후원
+                            String nickname = doneCallback.getDataList().get(2);
+                            int payAmount = Integer.parseInt(doneCallback.getDataList().get(3)) * 100;
+                            int balloonAmount = Integer.parseInt(doneCallback.getDataList().get(3));
+                            processChatMessage(new DonationChatEvent(channelId, nickname, msg, payAmount, balloonAmount));
+                        }
+                        donationTimers.remove(nick);
+                    }
+                }, 30); // 30ms 대기 후 메시지가 없으면 후원 이벤트 처리
+
+                // 타이머 관리에 추가
+                donationTimers.put(nick, timer);
+
             } else if (cmd.equals(KEY_CHAT)) {
                 String nick = dataList.get(5);
                 if (packetMap.containsKey(nick)) {
                     AfreecatvCallback doneCallback = packetMap.get(nick);
                     packetMap.remove(nick);
+
+                    // KEY_DONE의 타이머가 존재하면 취소
+                    if (donationTimers.containsKey(nick)) {
+                        donationTimers.get(nick).cancel();
+                        donationTimers.remove(nick);
+                    }
+
                     msg = dataList.get(0);
                     nickname = doneCallback.getDataList().get(2);
                     payAmount = Integer.parseInt(doneCallback.getDataList().get(3)) * 100;
                     balloonAmount = Integer.parseInt(doneCallback.getDataList().get(3));
+
                 } else {
                     msg = dataList.get(0);
                     nickname = nick;
                 }
+
             } else if (cmd.equals(KEY_SUB)) {
                 String nick = dataList.get(5);
                 if (packetMap.containsKey(nick)) {
@@ -129,8 +164,8 @@ public class AfreecatvSocket extends WebSocketClient {
                 }
             }
 
-            if (nickname != null && msg != null) {
-                msg = msg.isEmpty() ? "없음" : msg;
+            if (nickname != null) {
+                if (msg.isEmpty()) msg = null;
                 if (payAmount > 0 && balloonAmount > 0) {
                     processChatMessage(new DonationChatEvent(this.channelId, nickname, msg, payAmount, balloonAmount));
                 } else {
