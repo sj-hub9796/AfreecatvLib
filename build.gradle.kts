@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "me.taromati.afreecatvlib"
-version = "1.0.3"
+version = "1.0.7-BETA+12"
 
 repositories {
     mavenCentral()
@@ -37,27 +37,14 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-tasks.shadowJar {
-    archiveFileName.set("AfreecatvLib.jar")
+java {
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(16)
+    }
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = "me.taromati"
-            artifactId = "afreecatvlib"
-
-            from(components["java"])
-        }
-    }
-
-    repositories {
-        maven {
-            url = uri("https://repo.repsy.io/mvn/lone64/platform")
-            credentials {
-                username = properties["mavenUser"] as String
-                password = properties["mavenPass"] as String
-            }
-        }
-    }
+tasks.shadowJar {
+    archiveFileName.set("AfreecatvLib.jar")
 }
