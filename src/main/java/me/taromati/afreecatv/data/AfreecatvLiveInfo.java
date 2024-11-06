@@ -14,5 +14,6 @@ public class AfreecatvLiveInfo {
 
     private final String liveTitle;
     private final List<String> categoryTags;
+    private final boolean isBroadcasting;
 
 }
