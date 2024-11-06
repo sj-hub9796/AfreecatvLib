@@ -85,7 +85,7 @@ public class AfreecatvAPI {
             bodyJson.put("stream_type", "common");
             bodyJson.put("quality", "HD");
             HttpRequest request = HttpRequest.newBuilder().POST(formData(bodyJson))
-                    .uri(URI.create("https://live.afreecatv.com/afreeca/player_live_api.php?bjid=" + bjId))
+                    .uri(URI.create("https://live.sooplive.co.kr/afreeca/player_live_api.php?bjid=" + bjId))
                     .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
                     .header("Content-Type", "application/x-www-form-urlencoded").build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -101,13 +101,26 @@ public class AfreecatvAPI {
                         channel.get("BJID").toString(),
                         channel.get("BJNICK").toString(),
                         channel.get("TITLE").toString(),
-                        categoryTags
+                        categoryTags,
+                        true
                 );
             } else {
-                throw new AfreecatvException(ExceptionCode.API_CHAT_CHANNEL_ID_ERROR);
+                return new AfreecatvLiveInfo(
+                        null,
+                        null,
+                        null,
+                        null,
+                        false
+                );
             }
         } catch (Exception e) {
-            throw new AfreecatvException(ExceptionCode.API_CHAT_CHANNEL_ID_ERROR);
+            return new AfreecatvLiveInfo(
+                    null,
+                    null,
+                    null,
+                    null,
+                    false
+            );
         }
     }
 
@@ -144,7 +157,7 @@ public class AfreecatvAPI {
             bodyJson.put("stream_type", "common");
             bodyJson.put("quality", "HD");
             HttpRequest request = HttpRequest.newBuilder().POST(formData(bodyJson))
-                    .uri(URI.create("https://live.afreecatv.com/afreeca/player_live_api.php?bjid=" + bjId))
+                    .uri(URI.create("https://live.sooplive.co.kr/afreeca/player_live_api.php?bjid=" + bjId))
                     .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
                     .header("Content-Type", "application/x-www-form-urlencoded").build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
